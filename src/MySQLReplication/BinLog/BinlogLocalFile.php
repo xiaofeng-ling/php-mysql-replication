@@ -33,6 +33,8 @@ class BinlogLocalFile extends BinLogSocketConnect
         BinLogServerInfo::parsePackage($this->getResponse(false), $this->repository->getVersion());
         $this->authenticate();
 
+        $this->checkSum = $this->repository->isCheckSum();
+
         if (!file_exists(Config::getLocalBinLogFileName()))
             throw new BinLogException('Local File Not Found!', 1);
 
