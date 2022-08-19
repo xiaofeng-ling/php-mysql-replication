@@ -1,39 +1,30 @@
 <?php
-declare(strict_types=1);
 
 namespace MySQLReplication;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\DriverManager;
-use MySQLReplication\BinaryDataReader\BinaryDataReaderException;
+use Doctrine\DBAL\Exception;
 use MySQLReplication\BinLog\BinLogException;
+use MySQLReplication\BinLog\BinlogLocalFile;
 use MySQLReplication\BinLog\BinLogSocketConnect;
 use MySQLReplication\Cache\ArrayCache;
 use MySQLReplication\Config\Config;
 use MySQLReplication\Config\ConfigException;
 use MySQLReplication\Event\Event;
+use MySQLReplication\Event\EventLocal;
 use MySQLReplication\Event\RowEvent\RowEventFactory;
-use MySQLReplication\Exception\MySQLReplicationException;
 use MySQLReplication\Gtid\GtidException;
-use MySQLReplication\JsonBinaryDecoder\JsonBinaryDecoderException;
 use MySQLReplication\Repository\MySQLRepository;
 use MySQLReplication\Repository\RepositoryInterface;
 use MySQLReplication\Socket\Socket;
 use MySQLReplication\Socket\SocketException;
 use MySQLReplication\Socket\SocketInterface;
 use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class MySQLReplicationFactory
+class MySQLReplicationLocalFactory extends MySQLReplicationFactory
 {
-    protected $connection;
-    protected $eventDispatcher;
-    protected $event;
-
     /**
      * @throws BinLogException
      * @throws ConfigException
@@ -48,6 +39,8 @@ class MySQLReplicationFactory
         EventDispatcherInterface $eventDispatcher = null,
         SocketInterface $socket = null
     ) {
+        parent::__construct($config, $repository, $cache, $eventDispatcher, $socket);
+
         $config::validate();
 
         if (null === $repository) {
@@ -73,8 +66,8 @@ class MySQLReplicationFactory
             $socket = new Socket();
         }
 
-        $this->event = new Event(
-            new BinLogSocketConnect(
+        $this->event = new EventLocal(
+            new BinlogLocalFile(
                 $repository,
                 $socket
             ),
@@ -85,48 +78,5 @@ class MySQLReplicationFactory
             $this->eventDispatcher,
             $cache
         );
-    }
-
-    public function registerSubscriber(EventSubscriberInterface $eventSubscribers): void
-    {
-        $this->eventDispatcher->addSubscriber($eventSubscribers);
-    }
-
-    public function unregisterSubscriber(EventSubscriberInterface $eventSubscribers): void
-    {
-        $this->eventDispatcher->removeSubscriber($eventSubscribers);
-    }
-
-    public function getDbConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    /**
-     * @throws SocketException
-     * @throws JsonBinaryDecoderException
-     * @throws BinaryDataReaderException
-     * @throws BinLogException
-     * @throws InvalidArgumentException
-     * @throws MySQLReplicationException
-     */
-    public function run(): void
-    {
-        while (1) {
-            $this->consume();
-        }
-    }
-
-    /**
-     * @throws MySQLReplicationException
-     * @throws InvalidArgumentException
-     * @throws BinLogException
-     * @throws BinaryDataReaderException
-     * @throws JsonBinaryDecoderException
-     * @throws SocketException
-     */
-    public function consume(): void
-    {
-        $this->event->consume();
     }
 }

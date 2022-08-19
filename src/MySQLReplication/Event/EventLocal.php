@@ -1,19 +1,16 @@
 <?php
-declare(strict_types=1);
 
 namespace MySQLReplication\Event;
 
 use MySQLReplication\BinaryDataReader\BinaryDataReader;
 use MySQLReplication\BinaryDataReader\BinaryDataReaderException;
 use MySQLReplication\BinLog\BinLogException;
-use MySQLReplication\BinLog\BinLogServerInfo;
+use MySQLReplication\BinLog\BinlogLocalFile;
 use MySQLReplication\BinLog\BinLogSocketConnect;
 use MySQLReplication\Config\Config;
 use MySQLReplication\Definitions\ConstEventType;
-use MySQLReplication\Event\DTO\EventDTO;
 use MySQLReplication\Event\DTO\FormatDescriptionEventDTO;
 use MySQLReplication\Event\DTO\HeartbeatDTO;
-use MySQLReplication\Event\DTO\QueryDTO;
 use MySQLReplication\Event\RowEvent\RowEventFactory;
 use MySQLReplication\Exception\MySQLReplicationException;
 use MySQLReplication\JsonBinaryDecoder\JsonBinaryDecoderException;
@@ -22,28 +19,8 @@ use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class Event
+class EventLocal extends Event
 {
-    protected const MARIADB_DUMMY_QUERY = '# Dum';
-    protected const EOF_HEADER_VALUE = 254;
-
-    protected $binLogSocketConnect;
-    protected $rowEventFactory;
-    protected $eventDispatcher;
-    protected $cache;
-
-    public function __construct(
-        BinLogSocketConnect $binLogSocketConnect,
-        RowEventFactory          $rowEventFactory,
-        EventDispatcherInterface $eventDispatcher,
-        CacheInterface           $cache
-    ) {
-        $this->binLogSocketConnect = $binLogSocketConnect;
-        $this->rowEventFactory = $rowEventFactory;
-        $this->eventDispatcher = $eventDispatcher;
-        $this->cache = $cache;
-    }
-
     /**
      * @throws BinaryDataReaderException
      * @throws BinLogException
@@ -54,7 +31,7 @@ class Event
      */
     public function consume(): void
     {
-        $binaryDataReader = new BinaryDataReader($this->binLogSocketConnect->getResponse());
+        $binaryDataReader = new BinaryDataReader($this->binLogSocketConnect->getLocalResponse());
 
         // check EOF_Packet -> https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html
         if (self::EOF_HEADER_VALUE === $binaryDataReader->readUInt8()) {
@@ -101,35 +78,5 @@ class Event
         }
 
         $this->dispatch($eventDTO);
-    }
-
-    protected function createEventInfo(BinaryDataReader $binaryDataReader): EventInfo
-    {
-        return new EventInfo(
-            $binaryDataReader->readInt32(),
-            $binaryDataReader->readUInt8(),
-            $binaryDataReader->readInt32(),
-            $binaryDataReader->readInt32(),
-            $binaryDataReader->readInt32(),
-            $binaryDataReader->readUInt16(),
-            $this->binLogSocketConnect->getCheckSum(),
-            $this->binLogSocketConnect->getBinLogCurrent()
-        );
-    }
-
-    protected function filterDummyMariaDbEvents(QueryDTO $queryDTO): ?QueryDTO
-    {
-        if (BinLogServerInfo::isMariaDb() && false !== strpos($queryDTO->getQuery(), self::MARIADB_DUMMY_QUERY)) {
-            return null;
-        }
-
-        return $queryDTO;
-    }
-
-    protected function dispatch(EventDTO $eventDTO = null): void
-    {
-        if (null !== $eventDTO) {
-            $this->eventDispatcher->dispatch($eventDTO, $eventDTO->getType());
-        }
     }
 }

@@ -24,6 +24,8 @@ class Config implements JsonSerializable
     private static $tableCacheSize;
     private static $custom;
     private static $heartbeatPeriod;
+    private static $localBinLogFileName;
+    private static $localBinLogPosition;
 
     public function __construct(
         string $user,
@@ -42,7 +44,9 @@ class Config implements JsonSerializable
         array $databasesOnly,
         int $tableCacheSize,
         array $custom,
-        float $heartbeatPeriod
+        float $heartbeatPeriod,
+        string $localBinLogFileName,
+        int $localBinLogPosition
     ) {
         self::$user = $user;
         self::$host = $host;
@@ -61,6 +65,8 @@ class Config implements JsonSerializable
         self::$tableCacheSize = $tableCacheSize;
         self::$custom = $custom;
         self::$heartbeatPeriod = $heartbeatPeriod;
+        self::$localBinLogFileName = $localBinLogFileName;
+        self::$localBinLogPosition = $localBinLogPosition;
     }
 
     /**
@@ -218,6 +224,16 @@ class Config implements JsonSerializable
     public static function getHeartbeatPeriod(): float
     {
         return self::$heartbeatPeriod;
+    }
+
+    public static function getLocalBinLogFileName(): string
+    {
+        return self::$localBinLogFileName;
+    }
+
+    public static function getLocalBinLogPosition(): int
+    {
+        return self::$localBinLogPosition;
     }
 
     public function jsonSerialize()

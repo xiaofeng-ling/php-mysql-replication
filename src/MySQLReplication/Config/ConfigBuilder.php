@@ -22,6 +22,8 @@ class ConfigBuilder
     private $tableCacheSize = 128;
     private $custom = [];
     private $heartbeatPeriod = 0.0;
+    private $localBinLogFileName = '';
+    private $localBinLogPosition = 0;
 
     public function withUser(string $user): self
     {
@@ -147,6 +149,20 @@ class ConfigBuilder
         return $this;
     }
 
+    public function withLocalBinLogFileName(string $localBinLogFileName): self
+    {
+        $this->localBinLogFileName = $localBinLogFileName;
+
+        return $this;
+    }
+
+    public function withLocalBinLogPosition(int $localBinLogPosition): self
+    {
+        $this->localBinLogPosition = $localBinLogPosition;
+
+        return $this;
+    }
+
     public function build(): Config
     {
         return new Config(
@@ -166,7 +182,9 @@ class ConfigBuilder
             $this->databasesOnly,
             $this->tableCacheSize,
             $this->custom,
-            $this->heartbeatPeriod
+            $this->heartbeatPeriod,
+            $this->localBinLogFileName,
+            $this->localBinLogPosition,
         );
     }
 }
