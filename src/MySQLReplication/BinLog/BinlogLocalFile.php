@@ -35,6 +35,9 @@ class BinlogLocalFile extends BinLogSocketConnect
 
         $this->checkSum = $this->repository->isCheckSum();
 
+        $this->binLogCurrent->setBinLogPosition(Config::getLocalBinLogPosition());
+        $this->binLogCurrent->setBinFileName(Config::getLocalBinLogFileName());
+
         if (!file_exists(Config::getLocalBinLogFileName()))
             throw new BinLogException('Local File Not Found!', 1);
 
