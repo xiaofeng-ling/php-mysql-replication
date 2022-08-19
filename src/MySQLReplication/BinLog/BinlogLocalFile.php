@@ -25,7 +25,13 @@ class BinlogLocalFile extends BinLogSocketConnect
         RepositoryInterface $repository,
         SocketInterface $socket
     ) {
-        parent::__construct($repository, $socket);
+        $this->repository = $repository;
+        $this->socket = $socket;
+        $this->binLogCurrent = new BinLogCurrent();
+
+        $this->socket->connectToStream(Config::getHost(), Config::getPort());
+        BinLogServerInfo::parsePackage($this->getResponse(false), $this->repository->getVersion());
+        $this->authenticate();
 
         if (!file_exists(Config::getLocalBinLogFileName()))
             throw new BinLogException('Local File Not Found!', 1);

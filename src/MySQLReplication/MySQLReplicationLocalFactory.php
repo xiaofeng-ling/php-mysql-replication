@@ -39,8 +39,6 @@ class MySQLReplicationLocalFactory extends MySQLReplicationFactory
         EventDispatcherInterface $eventDispatcher = null,
         SocketInterface $socket = null
     ) {
-        parent::__construct($config, $repository, $cache, $eventDispatcher, $socket);
-
         $config::validate();
 
         if (null === $repository) {
